@@ -1,0 +1,36 @@
+#!/bin/bash
+
+path="."
+
+help() {
+  echo "Usage: update-docker [path]"
+  echo ""
+  echo "Options:"
+  echo "  -h, --help    Display this message"
+}
+
+if [[ -n $2 ]]; then
+  help
+  exit 1
+elif [[ -n $1 ]]; then
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+    exit 0
+  else
+    path=$1
+  fi
+fi
+
+find "$path" -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' subdir; do
+  if [ "$subdir" != "$path" ]; then
+    cd "$subdir" || continue
+    echo "Updating: $subdir"
+    docker compose pull
+    docker compose down
+    docker compose up -d
+    cd ..
+  fi
+done
+
+echo ""
+echo "Finished updating"
