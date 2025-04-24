@@ -1,0 +1,81 @@
+#!/bin/bash
+
+path="."
+docker=false
+system=false
+bad_opt=false
+
+help() {
+  echo "Usage: update [-h] [-s] [-d] [path]"
+  echo ""
+  echo "Options:"
+  echo "  -h, --help    Display this message"
+  echo "  -s, --system  Enable system upgrade"
+  echo "  -d, --docker  Enable docker upgrade"
+}
+
+while (("$#")); do
+  case "$1" in
+    -h|--help)
+      help
+      exit 0
+      ;;
+    -s|--system)
+      system=true
+      shift
+      ;;
+    -d|--docker)
+      docker=true
+      shift
+      ;;
+    -?*|--*) 
+      bad_opt=$1
+      shift
+      ;;
+    *)
+      path="$1"
+      shift
+      break
+      ;;
+  esac
+done
+
+if (("$#")); then
+  echo "Extra Argument: Specify one path only" >&2
+  help >&2
+  exit 1
+fi
+
+if [[ $bad_opt != false ]]; then
+  echo "Unknown option: $bad_opt" >&2
+  help >&2
+  exit 1
+fi
+
+update_docker() {
+  find "$path" -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' subdir; do
+    if [ "$subdir" != "$path" ]; then
+      (
+        cd "$subdir" || continue
+        echo "Updating: $subdir"
+        docker compose pull
+        docker compose down
+        docker compose up -d
+      cd ..
+      )
+    fi
+  done
+}
+
+if [[ $system == $docker ]]; then
+  update_docker
+  sudo apt update && sudo apt upgrade
+elif [[ $docker == true ]]; then
+  update_docker
+elif [[ $system == true ]]; then
+  sudo apt update && sudo apt upgrade
+fi
+
+echo ""
+echo "Finished updating"
+exit 0
