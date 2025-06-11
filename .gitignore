@@ -1,0 +1,11 @@
+*
+!/README.md
+!/.gitignore
+
+!/.zshrc
+!/.zshenv
+!/.zprofile
+
+!/.config
+!/.config/nvim
+!/.config/nvim/**
